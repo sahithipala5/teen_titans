@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>InnerGlow | Dashboard</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+  body { margin:0; font-family:'Segoe UI',sans-serif; display:flex; background:#f0f2f5; }
+  
+  /* Sidebar */
+  .sidebar {
+    width: 70px; background: linear-gradient(to bottom,#6a11cb,#2575fc); color:white;
+    height:100vh; position:fixed; top:0; left:0; padding-top:20px; display:flex;
+    flex-direction:column; transition: width 0.3s; overflow:hidden; z-index:1000;
+  }
+  .sidebar.expanded { width:250px; }
+  .sidebar h2 { font-size:1.6rem; text-align:center; margin-bottom:30px; font-weight:bold; opacity:0; transition:opacity 0.3s; }
+  .sidebar.expanded h2 { opacity:1; }
+  .sidebar a { color:white; text-decoration:none; padding:12px 20px; display:flex; align-items:center; font-weight:500; transition:all 0.3s; }
+  .sidebar a i { min-width:25px; font-size:1.2rem; }
+  .sidebar.expanded a span.label { display:inline; margin-left:12px; }
+  .sidebar a span.label { display:none; }
+  .sidebar a:hover { background: rgba(255,255,255,0.2); border-radius:10px; }
+
+  .logout-btn { margin-top:auto; background:#e74c3c; color:white; font-weight:bold; text-align:center; padding:12px; border-radius:8px; margin:20px; display:flex; align-items:center; justify-content:center; }
+  .sidebar.expanded .logout-btn { width:auto; }
+  .logout-btn:hover { background:#c0392b; }
+
+  /* Main content */
+  .main-content { margin-left:70px; padding:30px; width:calc(100%-70px); transition: margin-left 0.3s; }
+  .sidebar.expanded ~ .main-content { margin-left:250px; width:calc(100%-250px); }
+
+  /* Toggle icon */
+  .dashboard-icon { position:fixed; top:20px; left:10px; font-size:1.8rem; color:#fff; cursor:pointer; z-index:1100; transition:left 0.3s, color 0.3s; }
+  .sidebar.expanded ~ .dashboard-icon { left:260px; color:#6a11cb; }
+
+  /* Hero Section */
+  .hero { 
+    position:relative; 
+    background:url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1950&q=80') 
+               center/cover no-repeat; 
+    padding:40px 20px; 
+    border-radius:15px; 
+    color:white; 
+    text-align:center; 
+    margin-bottom:30px; 
+    overflow:hidden; 
+    min-height:250px;
+  }
+  .hero::after { 
+    content:''; position:absolute; top:0; left:0; 
+    width:100%; height:100%; 
+    background:rgba(0,0,0,0.45); 
+    border-radius:15px; 
+  }
+  .hero h1,.hero p,.hero blockquote,.score-badge,#scoreChart { 
+    position:relative; 
+    z-index:2; 
+  }
+  .hero h1 { font-size:2rem; font-weight:700; }
+  .hero p { font-size:1rem; margin-top:10px; }
+
+  /* Chart size fix */
+  #scoreChart { max-width:120px; max-height:120px; margin:20px auto; display:block; }
+
+  /* Feature Cards */
+  .feature-card { border-radius:15px; background-color:#fff; padding:25px; text-align:center; box-shadow:0 5px 20px rgba(0,0,0,0.05); transition:transform 0.3s, box-shadow 0.3s; min-height:200px; }
+  .feature-card:hover { transform:translateY(-8px); box-shadow:0 12px 25px rgba(0,0,0,0.12); }
+  .feature-card i { font-size:2.2rem; color:#6a11cb; margin-bottom:12px; }
+  .feature-card h4 { margin-bottom:10px; font-weight:600; }
+  .feature-card p { color:#555; font-size:0.95rem; }
+
+  /* Carousel quotes */
+  .carousel-item blockquote { font-size:1.2rem; font-style:italic; color:#fff; }
+  .carousel-item blockquote footer { font-size:0.95rem; color:#ddd; margin-top:5px; }
+
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar" id="sidebar">
+  <h2>InnerGlow</h2>
+  <a href="index.html"><i class="fas fa-home"></i> <span class="label">Home</span></a>
+  <a href="about_me.html"><i class="fas fa-user"></i> <span class="label">About Me</span></a>
+  <a href="screening.html"><i class="fas fa-file-medical-alt"></i> <span class="label">Screening</span></a>
+  <a href="tracking.html"><i class="fas fa-chart-line"></i> <span class="label">Track Progress</span></a>
+  <a href="appointments.html"><i class="fas fa-calendar-check"></i> <span class="label">Appointments</span></a>
+  <a href="chat.html"><i class="fas fa-comments"></i> <span class="label">Chat</span></a>
+  <a href="treatments&terapies.html"><i class="fas fa-hand-holding-medical"></i> <span class="label">Treatments & Therapies</span></a>
+  <a href="#" class="logout-btn" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> <span class="label">Logout</span></a>
+</div>
+
+<i class="fas fa-bars dashboard-icon" id="dashboardToggle"></i>
+
+<div class="main-content">
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <h1>Your Mental Wellness Dashboard</h1>
+    <p>InnerGlow is here to support your journey</p>
+    <canvas id="scoreChart"></canvas>
+
+    <!-- Quotes Carousel -->
+    <div id="quotesCarousel" class="carousel slide mt-4" data-bs-ride="carousel">
+      <div class="carousel-inner">
+        <div class="carousel-item active">
+          <blockquote>"Mental health is not a destination, but a process." <footer>- Noam Shpancer</footer></blockquote>
+        </div>
+        <div class="carousel-item">
+          <blockquote>"Take care of your body, it’s the only place you have to live." <footer>- Jim Rohn</footer></blockquote>
+        </div>
+        <div class="carousel-item">
+          <blockquote>"You don’t have to control your thoughts. You just have to stop letting them control you." <footer>- Dan Millman</footer></blockquote>
+        </div>
+      </div>
+      <button class="carousel-control-prev" type="button" data-bs-target="#quotesCarousel" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon"></span>
+      </button>
+      <button class="carousel-control-next" type="button" data-bs-target="#quotesCarousel" data-bs-slide="next">
+        <span class="carousel-control-next-icon"></span>
+      </button>
+    </div>
+  </section>
+
+  <!-- Feature Cards -->
+  <section class="container-fluid">
+    <div class="row g-4 text-center">
+      <div class="col-md-4">
+        <a href="about_me.html" class="text-decoration-none text-dark">
+          <div class="feature-card"><i class="fas fa-user"></i><h4>About Me</h4><p>Fill in personal details and health info.</p></div>
+        </a>
+      </div>
+      <div class="col-md-4">
+        <a href="screening.html" class="text-decoration-none text-dark">
+          <div class="feature-card"><i class="fas fa-file-medical-alt"></i><h4>Screening</h4><p>Self-assessment for mental health.</p></div>
+        </a>
+      </div>
+      <div class="col-md-4">
+        <a href="tracking.html" class="text-decoration-none text-dark">
+          <div class="feature-card"><i class="fas fa-chart-line"></i><h4>Track Progress</h4><p>Monitor your mental health journey.</p></div>
+        </a>
+      </div>
+      <div class="col-md-4">
+        <a href="appointments.html" class="text-decoration-none text-dark">
+          <div class="feature-card"><i class="fas fa-calendar-check"></i><h4>Appointments</h4><p>Book sessions with experts.</p></div>
+        </a>
+      </div>
+      <div class="col-md-4">
+        <a href="chat.html" class="text-decoration-none text-dark">
+          <div class="feature-card"><i class="fas fa-comments"></i><h4>Chat</h4><p>Talk to the AI assistant for guidance.</p></div>
+        </a>
+      </div>
+      <div class="col-md-4">
+        <a href="treatments&terapies.html" class="text-decoration-none text-dark">
+          <div class="feature-card"><i class="fas fa-hand-holding-medical"></i><h4>Treatments & Therapies</h4><p>Learn about therapies and treatment options.</p></div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // Redirect if not logged in
+  const isLoggedIn = localStorage.getItem("isLoggedIn");
+  if(!isLoggedIn){
+    window.location.href = "login.html";
+  }
+
+  // Logout
+  document.getElementById("logoutBtn").addEventListener("click", () => {
+    localStorage.clear();
+    window.location.href = "login.html";
+  });
+
+  // Sidebar toggle
+  const sidebar = document.getElementById("sidebar");
+  document.getElementById("dashboardToggle").addEventListener("click", () => {
+    sidebar.classList.toggle("expanded");
+  });
+
+  // Latest Score Radial Chart (dummy)
+  const ctx = document.getElementById('scoreChart').getContext('2d');
+  const latestScore = JSON.parse(localStorage.getItem('latestScore')) || { score: 22, level: "Moderate" };
+  let color = "#28a745";
+  if(latestScore.level === "Moderate") color="#fd7e14";
+  else if(latestScore.level === "High") color="#dc3545";
+  new Chart(ctx,{
+    type:'doughnut',
+    data:{ labels:['Score','Remaining'], datasets:[{data:[latestScore.score,30-latestScore.score], backgroundColor:[color,'#e9ecef'], borderWidth:0}]},
+    options:{cutout:'80%', responsive:true, plugins:{legend:{display:false}, tooltip:{enabled:false}}}
+  });
+</script>
+
+</body>
+</html>
